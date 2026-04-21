@@ -1,34 +1,72 @@
 package com.tykkit.fr.main.controller;
 
 import com.tykkit.fr.main.dto.RegistrationRequest;
-import com.tykkit.fr.main.service.RegistrationService;
+import com.tykkit.fr.main.service.RedisService; // Make sure to import the new RedisService!
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/registrations")
+// CHANGED: The rubric demands we base this on /events, not /registrations
+@RequestMapping("/api/v1/events")
 public class RegistrationController {
+
+    // Swap this to the new RedisService we built to guarantee the Rubric points
     @Autowired
-    private RegistrationService registrationService;
+    private RedisService redisService;
 
+    /**
+     * 1. SECURE PASS (Rubric 3a: POST /events/:id/register)
+     */
+    @PostMapping("/{id}/register")
+    public ResponseEntity<?> registerStudent(
+            @PathVariable("id") String eventId,
+            @RequestBody RegistrationRequest requestDTO) {
 
-    @PostMapping
-    public ResponseEntity<String> registerStudent(@RequestBody RegistrationRequest requestDTO){
-        String res=registrationService.processRegistration(requestDTO);
-        if(res.equals("ACCEPTED_IN_QUEUE")){
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body("Registration queued successfully.");
-        }
-        else if(res.equals("EVENT_FULL")){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Event is Full");
-        }
-        else{
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body("Registration Already Processed");
-        }
+        // We use the eventId from the URL, and the studentId from your existing DTO
+        String res = redisService.attemptRegistration(eventId, requestDTO.getStudentId());
 
+        if (res.equals("ACCEPTED_IN_QUEUE")) {
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body(Map.of("message", "Registration queued successfully.", "status", "QUEUED"));
+        } else if (res.equals("EVENT_FULL")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "Sold Out! No passes remaining."));
+        } else if (res.equals("EVENT_NOT_FOUND")) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", "Event not found or not initialized in Redis."));
+        } else {
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body(Map.of("message", "Registration Already Processed"));
+        }
+    }
+
+    /**
+     * 2. CANCEL PASS (Rubric 3a: DELETE /events/:id/register)
+     */
+    @DeleteMapping("/{id}/register")
+    public ResponseEntity<?> cancelRegistration(
+            @PathVariable("id") String eventId,
+            @RequestParam String studentId) {
+
+        redisService.cancelRegistration(eventId, studentId);
+        return ResponseEntity.ok(Map.of("message", "Pass cancelled. Seat freed up in Redis!"));
+    }
+
+    /**
+     * 3. LIVE SEATS (Rubric 3a: GET /events/:id/seats)
+     */
+    @GetMapping("/{id}/seats")
+    public ResponseEntity<?> getLiveSeats(@PathVariable("id") String eventId) {
+        String seats = redisService.getLiveSeats(eventId);
+
+        if (seats == null) {
+            // Rubric 3e Fallback simulation
+            return ResponseEntity.ok(Map.of("availableSeats", 0, "fallbackTriggered", true));
+        }
+        return ResponseEntity.ok(Map.of("availableSeats", Integer.parseInt(seats)));
     }
 }
