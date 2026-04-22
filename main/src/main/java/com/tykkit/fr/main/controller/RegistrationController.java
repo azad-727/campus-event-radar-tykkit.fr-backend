@@ -1,6 +1,7 @@
 package com.tykkit.fr.main.controller;
 
 import com.tykkit.fr.main.dto.RegistrationRequest;
+import com.tykkit.fr.main.repository.RegistrationRepository;
 import com.tykkit.fr.main.service.RedisService; // Make sure to import the new RedisService!
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,8 @@ public class RegistrationController {
     // Swap this to the new RedisService we built to guarantee the Rubric points
     @Autowired
     private RedisService redisService;
+    @Autowired
+    private RegistrationRepository regRepo;
 
     /**
      * 1. SECURE PASS (Rubric 3a: POST /events/:id/register)
@@ -68,5 +71,16 @@ public class RegistrationController {
             return ResponseEntity.ok(Map.of("availableSeats", 0, "fallbackTriggered", true));
         }
         return ResponseEntity.ok(Map.of("availableSeats", Integer.parseInt(seats)));
+    }
+    @GetMapping("/{id}/countdown")
+    public ResponseEntity<?> getEventCountdown(@PathVariable("id") String eventId) {
+        Long ttl = redisService.getCountdownSeconds(eventId);
+
+        // If ttl is negative or null, the key expired (event started) or doesn't exist
+        return ResponseEntity.ok(Map.of("secondsRemaining", ttl != null && ttl > 0 ? ttl : 0));
+    }
+    @GetMapping("/my-passes/{studentId}")
+    public ResponseEntity<?> getUserPasses(@PathVariable("studentId") String studentId){
+        return ResponseEntity.ok(regRepo.findByStudentId(studentId));
     }
 }

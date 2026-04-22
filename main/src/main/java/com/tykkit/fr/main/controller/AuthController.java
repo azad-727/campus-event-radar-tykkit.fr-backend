@@ -52,6 +52,7 @@ public class AuthController {
                 response.put("token",jwt);
                 response.put("email",user.getEmail());
                 response.put("fullName",user.getFullName());
+                response.put("studentId",user.getAcademicRollNo());
 
                 return ResponseEntity.ok(response);
             }

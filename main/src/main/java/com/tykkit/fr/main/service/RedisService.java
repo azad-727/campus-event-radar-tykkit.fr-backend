@@ -11,7 +11,7 @@ public class RedisService {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
-    private static final String SEAT_KEY = "seats";
+    private static final String SEAT_KEY = "seats:";
     private static final String QUEUE_KEY = "regqueue:";
     private static final String COUNTDOWN_KEY = "countdown:";
     private static final String CHANNEL_NEW = "events:new";
@@ -46,7 +46,8 @@ public class RedisService {
         if (remainingSeats < 5 && remainingSeats > 0) {
             redisTemplate.convertAndSend(CHANNEL_ALMOST_FULL, "Hurry! Event " + eventId + " is almost full!");
         }
-        redisTemplate.opsForList().rightPush(queueKey, studentId);
+        String jsonPayload = String.format("{\"eventId\":\"%s\", \"studentId\":\"%s\"}", eventId, studentId);
+        redisTemplate.opsForList().rightPush(queueKey, jsonPayload);
 
         return "ACCEPTED_IN_QUEUE";
     }

@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.index.GeoSpatialIndexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
 
+import java.time.Instant;
 import java.util.List;
 
 @Data
@@ -22,6 +23,8 @@ public class Event {
 
     private String title;
     private String type;
+    private String venueId;
+    private Instant eventDate;
 
     @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE)
     private GeoJsonPoint location;
@@ -30,6 +33,7 @@ public class Event {
     private int registeredCount;
 
     private List<EventAttribute> attributes;
+
 
     @Data
     @NoArgsConstructor
