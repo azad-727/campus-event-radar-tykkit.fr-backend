@@ -1,9 +1,12 @@
 package com.tykkit.fr.main.controller;
 
 import com.tykkit.fr.main.dto.RegistrationRequest;
+import com.tykkit.fr.main.model.Event;
+import com.tykkit.fr.main.repository.EventRepository;
 import com.tykkit.fr.main.repository.RegistrationRepository;
 import com.tykkit.fr.main.service.RedisService; // Make sure to import the new RedisService!
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +19,10 @@ import java.util.Map;
 public class RegistrationController {
 
     // Swap this to the new RedisService we built to guarantee the Rubric points
+    @Autowired
+    private EventRepository eventRepository;
+    @Autowired
+    private RedisTemplate redisTemplate;
     @Autowired
     private RedisService redisService;
     @Autowired
@@ -62,16 +69,7 @@ public class RegistrationController {
     /**
      * 3. LIVE SEATS (Rubric 3a: GET /events/:id/seats)
      */
-    @GetMapping("/{id}/seats")
-    public ResponseEntity<?> getLiveSeats(@PathVariable("id") String eventId) {
-        String seats = redisService.getLiveSeats(eventId);
 
-        if (seats == null) {
-            // Rubric 3e Fallback simulation
-            return ResponseEntity.ok(Map.of("availableSeats", 0, "fallbackTriggered", true));
-        }
-        return ResponseEntity.ok(Map.of("availableSeats", Integer.parseInt(seats)));
-    }
     @GetMapping("/{id}/countdown")
     public ResponseEntity<?> getEventCountdown(@PathVariable("id") String eventId) {
         Long ttl = redisService.getCountdownSeconds(eventId);

@@ -30,10 +30,11 @@ public class RedisSyncRunner implements CommandLineRunner {
         for (Event event : allEvents) {
             String eventId = event.getId();
 
-            // Check if Redis already knows about this event so we don't overwrite live data
+            // 2. Check if Redis already knows about this event so we don't overwrite live data
             if (redisService.getLiveSeats(eventId) == null) {
 
-                int maxSeats = event.getMaxSeats();
+                // 👉 THE CRITICAL LOGIC FIX: Subtract registered users!
+                int actualAvailableSeats = event.getMaxSeats() - event.getRegisteredCount();
 
                 // Let's assume the event happens in 7 days for the countdown timer
                 long secondsUntilEvent = 604800L;
@@ -44,19 +45,20 @@ public class RedisSyncRunner implements CommandLineRunner {
                             java.time.Instant.now(),
                             event.getEventDate()
                     ).getSeconds();
+
                     if (secondsUntilEvent < 0) {
                         secondsUntilEvent = 0;
                     }
+                } // 👈 THE SYNTAX FIX: This closing bracket was missing!
 
-                // 3. Inject the MongoDB data into Redis
-                redisService.initializeEvent(eventId, maxSeats, secondsUntilEvent);
+                // 3. Inject the REAL, calculated MongoDB data into Redis
+                redisService.initializeEvent(eventId, actualAvailableSeats, secondsUntilEvent);
 
-                System.out.println("✅ Synced Event: " + eventId + " | Seats: " + maxSeats);
+                System.out.println("✅ Synced Event: " + eventId + " | Available Seats: " + actualAvailableSeats);
                 syncCount++;
             }
         }
 
         System.out.println("🚀 [SYSTEM READY] Successfully synchronized " + syncCount + " missing events into Redis.");
     }
-}
 }

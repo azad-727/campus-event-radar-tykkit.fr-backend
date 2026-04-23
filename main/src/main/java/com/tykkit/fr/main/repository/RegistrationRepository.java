@@ -1,6 +1,7 @@
 package com.tykkit.fr.main.repository;
 
 
+import com.tykkit.fr.main.model.Event;
 import com.tykkit.fr.main.model.Registration;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -11,4 +12,6 @@ import java.util.List;
 @Repository
 public interface RegistrationRepository extends MongoRepository<Registration,String> {
     List<Registration> findByStudentId(String studentId);
+    void deleteByEventIdAndStudentId(String eventId,String studentId);
+    Registration findFirstByEventIdAndStudentId(String eventId,String studentId);
 }
