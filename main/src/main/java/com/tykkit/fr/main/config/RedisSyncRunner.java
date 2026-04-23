@@ -20,6 +20,7 @@ public class RedisSyncRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        try {
         System.out.println("🔄 [SYSTEM STARTUP] Synchronizing MongoDB Seats to Redis...");
 
         // 1. Fetch all events currently sitting in MongoDB
@@ -60,5 +61,9 @@ public class RedisSyncRunner implements CommandLineRunner {
         }
 
         System.out.println("🚀 [SYSTEM READY] Successfully synchronized " + syncCount + " missing events into Redis.");
-    }
+        } catch (Exception e) {
+            System.err.println("⚠️ [STARTUP WARNING] Redis sync failed: " + e.getMessage());
+            System.err.println("⚠️ App will continue running — sync will be handled on first request.");
+        }
+        }
 }
