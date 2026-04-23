@@ -1,4 +1,5 @@
 package com.tykkit.fr.main.security;
+
 import org.springframework.security.core.userdetails.User;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -18,37 +19,43 @@ import java.util.ArrayList;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-        @Autowired
-        private JwtUtils jwtUtils;
+    @Autowired
+    private JwtUtils jwtUtils;
 
-        @Override
-        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException{
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
-            try{
-                String jwt=parseJwt(request);
-                if(jwt!=null && jwtUtils.validateJwtToken(jwt)){
-                    String email=jwtUtils.getEmailFromJwtToken(jwt);
-
-                    UserDetails userDetails = new User(email,"",new ArrayList<>());
-                    UsernamePasswordAuthenticationToken authentication=
-                            new UsernamePasswordAuthenticationToken(userDetails,null,userDetails.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
-            } catch (Exception e){
-                logger.error("Cannot set user authentication: {}",e);
-            }
-            filterChain.doFilter(request,response);
-        }
-        private String parseJwt(HttpServletRequest request){
-            String headerAuth = request.getHeader("Authorization");
-            if(headerAuth !=null && headerAuth.startsWith("Bearer ")){
-                return headerAuth.substring(7);
-            }
-            return null;
+        // 🔴 THE FIX: Let browser 'OPTIONS' preflight checks pass without needing a JWT!
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
         }
 
+        try {
+            String jwt = parseJwt(request);
+            if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
+                String email = jwtUtils.getEmailFromJwtToken(jwt);
 
+                UserDetails userDetails = new User(email, "", new ArrayList<>());
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        } catch (Exception e) {
+            logger.error("Cannot set user authentication: {}", e);
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+    private String parseJwt(HttpServletRequest request) {
+        String headerAuth = request.getHeader("Authorization");
+        if (headerAuth != null && headerAuth.startsWith("Bearer ")) {
+            return headerAuth.substring(7);
+        }
+        return null;
+    }
 }
