@@ -16,7 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/admin")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"}) // Crucial: Allows React to talk to this endpoint
+@CrossOrigin(origins = "*")  // Crucial: Allows React to talk to this endpoint
 public class AdminController {
 
     // --- REPOSITORIES ---

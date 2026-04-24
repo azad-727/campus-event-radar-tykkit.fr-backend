@@ -17,7 +17,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@CrossOrigin(origins="http://localhost:5173")
+@CrossOrigin(origins = "*")
 public class AuthController {
     @Autowired
     private UserRepository userRepo;
@@ -41,6 +41,7 @@ public class AuthController {
         userRepo.save(user);
         return ResponseEntity.ok("User registered successfully!");
     }
+
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody User loginRequest){
         Optional<User> userOptional=userRepo.findByEmail(loginRequest.getEmail());
@@ -59,9 +60,9 @@ public class AuthController {
         }
         return ResponseEntity.status(401).body("Error: Invalid credentials");
     }
+
     @PostMapping("/change-password")
     public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request){
-
         Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
         String currentUserEmail=authentication.getName();
 
@@ -78,6 +79,5 @@ public class AuthController {
             }
         }
         return ResponseEntity.status(401).body("Error: User not found");
-
     }
 }
