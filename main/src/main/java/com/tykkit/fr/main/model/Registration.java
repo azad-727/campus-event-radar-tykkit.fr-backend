@@ -24,4 +24,7 @@ public class Registration {
     private String status;
     private Instant timestamp;
     private boolean attendance;
+    
+    private String ticketHash;
+    private String ticketId;
 }

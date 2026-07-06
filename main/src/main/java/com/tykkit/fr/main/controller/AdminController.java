@@ -8,7 +8,9 @@ import com.tykkit.fr.main.repository.EventRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.tykkit.fr.main.dto.UserDTO;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/admin")
 @CrossOrigin(origins = "*")  // Crucial: Allows React to talk to this endpoint
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
     // --- REPOSITORIES ---
@@ -47,9 +50,19 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<User>> getAllUsers() {
-        // Returns the entire list of users from MongoDB
-        return ResponseEntity.ok(userRepository.findAll());
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
+        List<UserDTO> dtos = userRepository.findAll().stream().map(user -> {
+            UserDTO dto = new UserDTO();
+            dto.setId(user.getId());
+            dto.setFullName(user.getFullName());
+            dto.setEmail(user.getEmail());
+            dto.setGlobalTrustScore(user.getGlobalTrustScore());
+            dto.setCreatedAt(user.getCreatedAt());
+            dto.setAcademicRollNo(user.getAcademicRollNo());
+            dto.setRollType(user.getRollType());
+            return dto;
+        }).collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/users/{studentId}/history")

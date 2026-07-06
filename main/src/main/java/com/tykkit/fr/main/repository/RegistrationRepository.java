@@ -14,4 +14,5 @@ public interface RegistrationRepository extends MongoRepository<Registration,Str
     List<Registration> findByStudentId(String studentId);
     void deleteByEventIdAndStudentId(String eventId,String studentId);
     Registration findFirstByEventIdAndStudentId(String eventId,String studentId);
+    boolean existsByEventIdAndStudentId(String eventId, String studentId);
 }

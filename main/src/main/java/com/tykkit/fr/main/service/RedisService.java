@@ -96,12 +96,12 @@ public class RedisService {
         Update update=new Update().inc("registeredCount",-1);
         mongoTemplate.updateFirst(query,update,Event.class);
 
-        redisTemplate.opsForValue().increment(SEAT_KEY + eventId);
+        redisTemplate.opsForValue().increment("event:" + eventId + ":seats");
         redisTemplate.convertAndSend(CHANNEL_SEAT_OPEN, "A seat just opened for event " + eventId + "!");
         System.out.println("Pass Terminated: "+studentID+"| Seat refunded to Redis for event: "+eventId);
     }
     public String getLiveSeats(String eventId){
-        return redisTemplate.opsForValue().get(SEAT_KEY+eventId);
+        return redisTemplate.opsForValue().get("event:" + eventId + ":seats");
     }
     public Long getCountdownSeconds(String eventId) {
         return redisTemplate.getExpire(COUNTDOWN_KEY + eventId);

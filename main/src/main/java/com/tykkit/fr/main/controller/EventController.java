@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,8 @@ public class EventController {
     EventRepository eventRepository;
     @Autowired
     private RedisTemplate redisTemplate;
+    @Autowired
+    private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
 
     public static class EventRequest {
         public String eventId;
@@ -36,8 +39,17 @@ public class EventController {
         public List<Event.EventAttribute> attributes;
     }
     @GetMapping
-    public ResponseEntity<List<Event>> getAllEvents(){
-        return ResponseEntity.ok(eventRepository.findAll());
+    public ResponseEntity<List<Event>> getAllEvents(@RequestParam(required = false, defaultValue = "UPCOMING") String status) {
+        List<Event> events = eventRepository.findAll();
+        if ("ALL".equalsIgnoreCase(status)) {
+            return ResponseEntity.ok(events);
+        }
+        
+        List<Event> filtered = events.stream()
+                .filter(e -> status.equalsIgnoreCase(e.getStatus()) || 
+                            ("UPCOMING".equalsIgnoreCase(status) && ("LIVE".equalsIgnoreCase(e.getStatus()) || e.getStatus() == null)))
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(filtered);
     }
 
     @GetMapping("/{id}/seats")
@@ -69,6 +81,7 @@ public class EventController {
 
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Event> createEvent(@RequestBody EventRequest request) {
         Event newEvent = new Event();
         newEvent.setEventId(request.eventId);
@@ -76,6 +89,19 @@ public class EventController {
         newEvent.setType(request.type);
         newEvent.setMaxSeats(request.maxSeats);
         newEvent.setRegisteredCount(request.registeredCount);
+        newEvent.setStatus("UPCOMING");
+        
+        // Extract price and image from attributes
+        if (request.attributes != null) {
+            for (Event.EventAttribute attr : request.attributes) {
+                if ("price".equals(attr.getK())) {
+                    try { newEvent.setPrice(Double.parseDouble(attr.getV().replaceAll("[^\\d.]", ""))); } catch (Exception e) {}
+                }
+                if ("image".equals(attr.getK())) {
+                    newEvent.setCoverImageUrl(attr.getV());
+                }
+            }
+        }
         newEvent.setAttributes(request.attributes);
 
         // Safely construct the GeoJsonPoint in Java where it won't crash
@@ -86,6 +112,10 @@ public class EventController {
 
         String redisKey = "event:" + savedEvent.getId() + ":seats";
         redisTemplate.opsForValue().set(redisKey, String.valueOf(savedEvent.getMaxSeats()));
+        
+        // Broadcast notification to all clients
+        messagingTemplate.convertAndSend("/topic/notifications", "NEW EVENT DROP: " + savedEvent.getTitle() + " has just been announced! 🔥");
+        
         // Save to MongoDB
 
         return ResponseEntity.ok(savedEvent);

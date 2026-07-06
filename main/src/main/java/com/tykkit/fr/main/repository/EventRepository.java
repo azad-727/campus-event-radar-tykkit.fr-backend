@@ -12,6 +12,6 @@ import java.util.List;
 @Repository
 public interface EventRepository extends MongoRepository<Event,String> {
     List<Event> findByLocationNear(Point location, Distance maxDistance);
-    @Query("{ 'attributes':{$elemMatch:{'k':'venueId','v',?0}}}")
+    @Query("{ 'attributes':{$elemMatch:{'k':'venueId','v':?0}}}")
     List<Event>findByVenueId(String venueId);
 }

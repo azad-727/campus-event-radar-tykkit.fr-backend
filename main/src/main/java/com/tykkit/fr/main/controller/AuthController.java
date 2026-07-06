@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -25,7 +26,6 @@ public class AuthController {
     private PasswordEncoder encoder;
     @Autowired
     private JwtUtils jwtUtils;
-
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@RequestBody User signUpRequest){
         if(userRepo.existsByEmail(signUpRequest.getEmail())){

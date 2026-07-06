@@ -20,10 +20,29 @@ public class JwtUtils {
     public String generateJwtToken(String email){
         return Jwts.builder()
                 .setSubject(email)
+                .claim("email",email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+    public String generateContextualJwtToken(String userId,String email,String instituteId,String role){
+        return Jwts.builder()
+                .setSubject(userId)
+                .claim("email",email)
+                .claim("instituteId",instituteId)
+                .claim("role",role)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+    public Claims extractAllClaims(String token){
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
     public String getEmailFromJwtToken(String token) {
         return Jwts.parserBuilder()
@@ -34,18 +53,11 @@ public class JwtUtils {
                 .getSubject();
     }
     public boolean validateJwtToken(String authToken) {
-        try {
+        try{
             Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(authToken);
             return true;
-        } catch (SecurityException | MalformedJwtException e) {
-            logger.error("Invalid JWT signature: {}", e.getMessage());
-        } catch (ExpiredJwtException e) {
-            logger.error("JWT token is expired: {}", e.getMessage());
-        } catch (UnsupportedJwtException e) {
-            logger.error("JWT token is unsupported: {}", e.getMessage());
-        } catch (IllegalArgumentException e) {
-            logger.error("JWT claims string is empty: {}", e.getMessage());
+        } catch (JwtException e){
+            return false;
         }
-        return false;
     }
 }

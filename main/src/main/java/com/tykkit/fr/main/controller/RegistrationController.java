@@ -36,6 +36,16 @@ public class RegistrationController {
             @PathVariable("id") String eventId,
             @RequestBody RegistrationRequest requestDTO) {
 
+        Event event = eventRepository.findById(eventId).orElse(null);
+        if (event == null) return ResponseEntity.status(404).body(Map.of("message", "Event not found"));
+        if ("COMPLETED".equals(event.getStatus()) || "CANCELLED".equals(event.getStatus())) {
+            return ResponseEntity.status(410).body(Map.of("message", "Event has already ended or is cancelled."));
+        }
+
+        if (regRepo.existsByEventIdAndStudentId(eventId, requestDTO.getStudentId())) {
+            return ResponseEntity.status(409).body(Map.of("message", "You already have a pass for this event."));
+        }
+
         // We use the eventId from the URL, and the studentId from your existing DTO
         String res = redisService.attemptRegistration(eventId, requestDTO.getStudentId());
 
@@ -57,12 +67,15 @@ public class RegistrationController {
     /**
      * 2. CANCEL PASS (Rubric 3a: DELETE /events/:id/register)
      */
-    @DeleteMapping("/{id}/register")
+    @DeleteMapping("/{id}/register/{regId}")
     public ResponseEntity<?> cancelRegistration(
             @PathVariable("id") String eventId,
-            @RequestParam String studentId) {
+            @PathVariable("regId") String regId) {
 
-        redisService.cancelRegistration(eventId, studentId);
+        com.tykkit.fr.main.model.Registration reg = regRepo.findById(regId).orElse(null);
+        if (reg == null) return ResponseEntity.notFound().build();
+        
+        redisService.cancelRegistration(eventId, reg.getStudentId());
         return ResponseEntity.ok(Map.of("message", "Pass cancelled. Seat freed up in Redis!"));
     }
 

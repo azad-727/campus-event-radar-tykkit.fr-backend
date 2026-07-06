@@ -32,6 +32,10 @@ public class Event {
     private int maxSeats;
     private int registeredCount;
 
+    private String status; // UPCOMING, LIVE, COMPLETED, CANCELLED
+    private String coverImageUrl;
+    private double price;
+
     private List<EventAttribute> attributes;
 
 

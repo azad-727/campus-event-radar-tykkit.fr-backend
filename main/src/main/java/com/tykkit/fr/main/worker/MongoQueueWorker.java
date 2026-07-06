@@ -53,12 +53,18 @@ public class MongoQueueWorker {
                     String dynamicStudentId = jsonNode.get("studentId").textValue();
                     String dynamicEventId = jsonNode.get("eventId").textValue();
 
+                    // Generate ticket ID and Hash
+                    String ticketId = "TKT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+                    String ticketHash = "tykkit-auth://event/" + dynamicEventId + "/user/" + dynamicStudentId;
+
                     // 2. Save the Registration Record
                     Registration newReg = new Registration();
                     newReg.setEventId(dynamicEventId);
                     newReg.setStudentId(dynamicStudentId);
                     newReg.setStatus("CONFIRMED");
                     newReg.setTimestamp(Instant.now());
+                    newReg.setTicketId(ticketId);
+                    newReg.setTicketHash(ticketHash);
                     registrationRepository.save(newReg);
 
                     // 3. COMPUTED PATTERN (Rubric 1c): Use $inc to update the Event's registered_count
