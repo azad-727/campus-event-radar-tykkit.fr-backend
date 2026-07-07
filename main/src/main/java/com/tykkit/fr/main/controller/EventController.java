@@ -91,7 +91,9 @@ public class EventController {
         newEvent.setRegisteredCount(request.registeredCount);
         newEvent.setStatus("UPCOMING");
         
-        // Extract price and image from attributes
+        // Extract price, image, date, and time from attributes
+        String dateStr = null;
+        String timeStr = null;
         if (request.attributes != null) {
             for (Event.EventAttribute attr : request.attributes) {
                 if ("price".equals(attr.getK())) {
@@ -100,8 +102,29 @@ public class EventController {
                 if ("image".equals(attr.getK())) {
                     newEvent.setCoverImageUrl(attr.getV());
                 }
+                if ("date".equals(attr.getK())) {
+                    dateStr = attr.getV();
+                }
+                if ("time".equals(attr.getK())) {
+                    timeStr = attr.getV();
+                }
             }
         }
+        
+        // Parse date and time into Instant for the EventCleanupWorker
+        if (dateStr != null && !dateStr.isEmpty()) {
+            try {
+                if (timeStr == null || timeStr.isEmpty()) timeStr = "00:00";
+                // Ensure time string has seconds, e.g. "18:00" -> "18:00:00"
+                if (timeStr.length() == 5) timeStr += ":00";
+                
+                String isoDate = dateStr + "T" + timeStr + "Z";
+                newEvent.setEventDate(java.time.Instant.parse(isoDate));
+            } catch (Exception e) {
+                System.err.println("Failed to parse event date: " + e.getMessage());
+            }
+        }
+        
         newEvent.setAttributes(request.attributes);
 
         // Safely construct the GeoJsonPoint in Java where it won't crash

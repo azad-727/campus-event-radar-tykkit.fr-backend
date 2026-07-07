@@ -75,6 +75,11 @@ public class RegistrationController {
         com.tykkit.fr.main.model.Registration reg = regRepo.findById(regId).orElse(null);
         if (reg == null) return ResponseEntity.notFound().build();
         
+        Event event = eventRepository.findById(eventId).orElse(null);
+        if (event != null && ("COMPLETED".equals(event.getStatus()) || "CANCELLED".equals(event.getStatus()))) {
+            return ResponseEntity.status(400).body(Map.of("message", "Cannot cancel ticket for a past or cancelled event."));
+        }
+        
         redisService.cancelRegistration(eventId, reg.getStudentId());
         return ResponseEntity.ok(Map.of("message", "Pass cancelled. Seat freed up in Redis!"));
     }
