@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import com.tykkit.fr.main.repository.RegistrationRepository;
 import com.tykkit.fr.main.model.Event;
+import com.tykkit.fr.main.model.Registration;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -90,8 +91,9 @@ public class RedisService {
         }
     }
     public void cancelRegistration(String eventId,String studentID) {
-        regRepo.deleteByEventIdAndStudentId(eventId, studentID);
-
+        Query regQuery = new Query(Criteria.where("eventId").is(eventId).and("studentId").is(studentID));
+        Update regUpdate = new Update().set("status", "CANCELLED");
+        mongoTemplate.updateFirst(regQuery, regUpdate, Registration.class);
         Query query=new Query(Criteria.where("id").is(eventId));
         Update update=new Update().inc("registeredCount",-1);
         mongoTemplate.updateFirst(query,update,Event.class);

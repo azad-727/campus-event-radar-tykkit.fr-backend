@@ -42,7 +42,7 @@ public class RegistrationController {
             return ResponseEntity.status(410).body(Map.of("message", "Event has already ended or is cancelled."));
         }
 
-        if (regRepo.existsByEventIdAndStudentId(eventId, requestDTO.getStudentId())) {
+        if (regRepo.existsByEventIdAndStudentIdAndStatus(eventId, requestDTO.getStudentId(), "CONFIRMED")) {
             return ResponseEntity.status(409).body(Map.of("message", "You already have a pass for this event."));
         }
 
