@@ -51,9 +51,7 @@ public class RedisService {
 
         Object rawSeats = redisTemplate.opsForValue().get(seatKey);
 
-        Long remainingSeats = redisTemplate.opsForValue().decrement(seatKey);
-
-        if (rawSeats == null || rawSeats.toString().equals("0")) {
+        if (rawSeats == null) {
             System.out.println("⚠️ Cache Miss/Empty for " + eventId + ". Healing from MongoDB...");
 
             Event event = eventRepository.findById(eventId).orElse(null);
@@ -65,12 +63,15 @@ public class RedisService {
             int realSeats = event.getMaxSeats() - event.getRegisteredCount();
 
             if (realSeats <= 0) {
+                redisTemplate.opsForValue().set(seatKey, "0");
                 return "EVENT_FULL"; // MongoDB confirms it is actually sold out
             }
 
             // HEAL REDIS: Overwrite the bad data with the real number
             redisTemplate.opsForValue().set(seatKey, String.valueOf(realSeats));
         }
+
+        Long remainingSeats = redisTemplate.opsForValue().decrement(seatKey);
 
         if (remainingSeats != null && remainingSeats >= 0) {
 
