@@ -48,12 +48,19 @@ public class AuthController {
         if(userOptional.isPresent()){
             User user=userOptional.get();
             if(encoder.matches(loginRequest.getPassword(), user.getPassword())){
-                String jwt=jwtUtils.generateJwtToken(user.getEmail());
+                // Fetch or assign default instituteId to make the multi-tenant claim work
+                String instituteId = "INST_MAIN"; 
+                String role = user.getRollType() != null ? user.getRollType() : "ROLE_STUDENT";
+                
+                String jwt=jwtUtils.generateContextualJwtToken(user.getId(), user.getEmail(), instituteId, role);
+                
                 Map<String,Object> response=new HashMap<>();
                 response.put("token",jwt);
                 response.put("email",user.getEmail());
                 response.put("fullName",user.getFullName());
                 response.put("studentId",user.getAcademicRollNo());
+                response.put("instituteId", instituteId);
+                response.put("role", role);
 
                 return ResponseEntity.ok(response);
             }
